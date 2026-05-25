@@ -25,3 +25,12 @@ build/
 
 # Jupyter Notebook
 .ipynb_checkpoints
+
+# Node_modules
+*/node_modules/
+*/dist
+*/.env
+*/.env.local
+*/.env.*.local
+*/package-lock.json
+*/yarn.lock
