@@ -4,30 +4,30 @@ services:
     name: mare-entregas-api
     env: node
     rootDir: app-entregas-back
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_ENV
         value: production
       - key: BEARER_TOKEN
-        generateValue: true   # Render gera automaticamente um valor seguro
+        generateValue: true
 
   # ── Frontend (SPA estático) ─────────────────────────────────
   - type: web
     name: mare-entregas-app
     env: static
     rootDir: app-entregas-front
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /*
-        destination: /index.html   # necessário para React Router funcionar
+        destination: /index.html
     envVars:
       - key: VITE_BEARER_TOKEN
         fromService:
           name: mare-entregas-api
           type: web
-          envVarKey: BEARER_TOKEN  # reutiliza o token gerado pelo backend
+          envVarKey: BEARER_TOKEN
       - key: VITE_API_URL
-        sync: false   # preencher manualmente após o backend subir (ver README)
+        sync: false
