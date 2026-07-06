@@ -1,6 +1,6 @@
 # Maré Entregas — App de Entregas
 
-Sistema de gerenciamento de entregas para entregadores do Complexo da Maré e Manguinhos, Rio de Janeiro.
+Sistema de gerenciamento de entregas para entregadores do Complexo da Maré e Manguinhos, Espirito Santo.
 
 ---
 
