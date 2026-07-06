@@ -196,6 +196,16 @@ A implementação evoluiu além da especificação inicial (SDD) em alguns ponto
 
 ---
 
+## Autores
+
+| Nome            | GitHub / Contato        |
+|-----------------|-------------------------|
+| Douglas Bolis   |                         |
+| Gustavo Laube   |                         |
+| Gabriel Brito   |                         |
+
+---
+
 ## Licença
 
 Projeto interno — Associação de Moradores do Complexo da Maré e Manguinhos.
