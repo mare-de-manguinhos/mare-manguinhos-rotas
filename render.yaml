@@ -6,7 +6,6 @@ services:
     rootDir: app-entregas-back
     buildCommand: npm install && npm run build
     startCommand: npm start
-    plan: free
     envVars:
       - key: NODE_ENV
         value: production
@@ -20,7 +19,6 @@ services:
     rootDir: app-entregas-front
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    plan: free
     routes:
       - type: rewrite
         source: /*
