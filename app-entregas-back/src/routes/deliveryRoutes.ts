@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import {
   getAllDeliveries,
+  getDeliveryHistory,
+  getPendingDeliveries,
   getDeliveryById,
   updateDeliveryStatus,
   createDelivery,
@@ -10,22 +12,15 @@ import {
 
 const router = Router();
 
-// GET /api/deliveries?driverId=...
+// Specific routes must come before parameterized /:id routes
+router.get('/history', getDeliveryHistory);
+router.get('/pending', getPendingDeliveries);
+
 router.get('/', getAllDeliveries);
-
-// GET /api/deliveries/:id
 router.get('/:id', getDeliveryById);
-
-// POST /api/deliveries
 router.post('/', createDelivery);
-
-// PUT /api/deliveries/:id
 router.put('/:id', updateDelivery);
-
-// PATCH /api/deliveries/:id/status
 router.patch('/:id/status', updateDeliveryStatus);
-
-// DELETE /api/deliveries/:id
 router.delete('/:id', deleteDelivery);
 
 export default router;

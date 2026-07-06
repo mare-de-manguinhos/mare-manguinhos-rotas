@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDeliveryDetails } from '../hooks/useDeliveryDetails';
-import useAuthStore from '../stores/authStore.ts';
-import { deliveryService } from '../services/api/deliveryService'; // Assuming this function exists
+import { deliveryService } from '../services/api/deliveryService';
+import type { DeliveryStatus } from '../types/delivery';
 
-// Define possible delivery statuses and their display names
-const deliveryStatusOptions = [
+const statusOptions: { value: DeliveryStatus; label: string }[] = [
   { value: 'PENDENTE', label: 'Pendente' },
   { value: 'SAIU_PARA_ENTREGA', label: 'Saiu para entrega' },
   { value: 'ENTREGUE', label: 'Entregue' },
@@ -14,219 +13,217 @@ const deliveryStatusOptions = [
   { value: 'CANCELADA', label: 'Cancelada' },
 ];
 
+const statusConfig: Record<string, { bg: string; text: string }> = {
+  PENDENTE: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  SAIU_PARA_ENTREGA: { bg: 'bg-blue-100', text: 'text-blue-700' },
+  ENTREGUE: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
+  ENDERECO_NAO_ENCONTRADO: { bg: 'bg-red-100', text: 'text-red-700' },
+  CLIENTE_NAO_ENCONTRADO: { bg: 'bg-red-100', text: 'text-red-700' },
+  CANCELADA: { bg: 'bg-slate-100', text: 'text-slate-600' },
+};
+
+const ArrowLeftIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="19" y1="12" x2="5" y2="12"/>
+    <polyline points="12 19 5 12 12 5"/>
+  </svg>
+);
+
+const MapIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="3 11 22 2 13 21 11 13 3 11"/>
+  </svg>
+);
+
+const CopyIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/>
+  </svg>
+);
+
 const DeliveryDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { delivery, loading, error, refetchDelivery } = useDeliveryDetails(id || ''); // Added refetchDelivery to refresh data after status update
-  // const user = useAuthStore((state) => state.user);
+  const { delivery, loading, error, refetchDelivery } = useDeliveryDetails(id ?? '');
 
   const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState<boolean>(false);
-  const [statusUpdateError, setStatusUpdateError] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  // Handle logout
-  const handleLogout = async () => {
-    useAuthStore.getState().logout();
-    navigate('/');
-  };
-
-  // Handle status change
-  const handleStatusChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedStatus(event.target.value);
-    setStatusUpdateError(null); // Clear previous errors on new selection
-  };
-
-  // Handle status update submission
-  const handleUpdateStatus = async () => {
-    if (!selectedStatus || !delivery) return;
-
-    setIsUpdatingStatus(true);
-    setStatusUpdateError(null);
-
-    try {
-      // Assuming updateDeliveryStatus returns the updated delivery object or throws an error
-      await deliveryService.updateDeliveryStatus(delivery.id, selectedStatus as any);
-      alert(`Status da entrega atualizado para: ${deliveryStatusOptions.find(opt => opt.value === selectedStatus)?.label}`);
-      // Refresh delivery details to show the updated status
-      await refetchDelivery(); // Use refetchDelivery to update local state
-      setSelectedStatus(''); // Reset selection after successful update
-    } catch (err: any) {
-      console.error('Falha ao atualizar status:', err);
-      setStatusUpdateError(err.message || 'Ocorreu um erro ao atualizar o status.');
-    } finally {
-      setIsUpdatingStatus(false);
-    }
-  };
-
-  // Determine available statuses based on current delivery status (optional, for future validation)
-  // For now, we show all options and rely on backend validation.
-  // const availableStatuses = deliveryStatusOptions.filter(status => ...);
-
-  // Set initial selectedStatus if delivery is loaded and status is available
   React.useEffect(() => {
-    if (delivery && delivery.status && !selectedStatus) {
+    if (delivery?.status && !selectedStatus) {
       setSelectedStatus(delivery.status);
     }
   }, [delivery, selectedStatus]);
 
-  if (loading) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6'>
-        <p className='text-gray-600'>Carregando detalhes da entrega...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className='min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4 sm:p-6'>
-        <p className='text-red-500 mb-4'>Erro: {error}</p>
-        <button
-          onClick={() => navigate(-1)} // Go back to previous page
-          className='bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline'
-        >
-          Voltar
-        </button>
-      </div>
-    );
-  }
-
-  if (!delivery) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-100 p-4 sm:p-6'>
-        <p className='text-gray-600'>Entrega não encontrada.</p>
-        <button
-          onClick={() => navigate(-1)} // Go back to previous page
-          className='ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline'
-        >
-          Voltar
-        </button>
-      </div>
-    );
-  }
-
-  // Helper to format status for display
-  const formatStatus = (status: string) => {
-    const option = deliveryStatusOptions.find(opt => opt.value === status);
-    return option ? option.label : status.replace(/[-_]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-  };
-
-  // Determine badge class based on status
-  const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case 'PENDENTE': return 'bg-yellow-100 text-yellow-800';
-      case 'SAIU_PARA_ENTREGA': return 'bg-blue-100 text-blue-800';
-      case 'ENTREGUE': return 'bg-green-100 text-green-800';
-      case 'ENDERECO_NAO_ENCONTRADO': return 'bg-red-100 text-red-800';
-      case 'CLIENTE_NAO_ENCONTRADO': return 'bg-red-100 text-red-800';
-      case 'CANCELADA': return 'bg-gray-200 text-gray-800';
-      default: return 'bg-gray-100 text-gray-700';
+  const handleUpdateStatus = async () => {
+    if (!selectedStatus || !delivery) return;
+    setIsUpdating(true);
+    setUpdateError(null);
+    try {
+      await deliveryService.updateDeliveryStatus(delivery.id, selectedStatus as DeliveryStatus);
+      await refetchDelivery();
+      setSelectedStatus('');
+    } catch (err: any) {
+      setUpdateError(err.message || 'Erro ao atualizar o status.');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  return (
-    <div className='min-h-screen bg-gray-100 p-4 sm:p-6'>
-      <div className='flex justify-between items-center mb-6'>
-        <h1 className='text-3xl font-bold text-gray-800'>Detalhes da Entrega</h1>
-        <button
-          onClick={handleLogout}
-          className='bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline'
-        >
-          Sair
-        </button>
+  const handleCopyAddress = async () => {
+    if (!delivery) return;
+    try {
+      await navigator.clipboard.writeText(delivery.deliveryAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback silent
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-3">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-500 text-sm">Carregando detalhes...</p>
       </div>
-      <div className='bg-white p-6 sm:p-8 rounded-lg shadow-lg max-w-md mx-auto mb-8'>
-        <div className='mb-4'>
-          <p className='text-gray-700 font-semibold'>Cliente:</p>
-          <p className='text-gray-900'>{delivery.clientName}</p>
-        </div>
-        <div className='mb-4'>
-          <p className='text-gray-700 font-semibold'>Endereço:</p>
-          <p className='text-gray-900'>{delivery.deliveryAddress}</p>
-        </div>
-        {delivery.clientPhone && (
-          <div className='mb-4'>
-            <p className='text-gray-700 font-semibold'>Telefone:</p>
-            <a href={`tel:${delivery.clientPhone}`} className='text-blue-500 hover:underline'>
-              {delivery.clientPhone}
-            </a>
-          </div>
-        )}
-        <div className='mb-4'>
-          <p className='text-gray-700 font-semibold'>Status Atual:</p>
-          <span
-            className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(delivery.status)}`}
+    );
+  }
+
+  if (error || !delivery) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 gap-4">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center max-w-sm w-full">
+          <p className="text-red-600 font-medium mb-4">{error ?? 'Entrega não encontrada.'}</p>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 px-6 rounded-lg transition text-sm"
           >
-            {formatStatus(delivery.status)}
-          </span>
+            Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const config = statusConfig[delivery.status] ?? { bg: 'bg-slate-100', text: 'text-slate-600' };
+  const statusLabel = statusOptions.find(o => o.value === delivery.status)?.label ?? delivery.status;
+  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(delivery.deliveryAddress)}`;
+  const statusChanged = selectedStatus && selectedStatus !== delivery.status;
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-indigo-700 text-white px-4 pt-12 pb-5">
+        <div className="max-w-lg mx-auto">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-indigo-300 hover:text-white text-sm mb-3 transition"
+            type="button"
+          >
+            <ArrowLeftIcon />
+            Voltar
+          </button>
+          <h1 className="text-white text-xl font-bold">Detalhes da entrega</h1>
+        </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 pt-5 pb-8 space-y-4">
+        {/* Client card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-0.5">Cliente</p>
+              <h2 className="text-slate-800 font-bold text-xl">{delivery.clientName}</h2>
+            </div>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold shrink-0 ${config.bg} ${config.text}`}>
+              {statusLabel}
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-0.5">Endereço de entrega</p>
+              <p className="text-slate-700 text-sm leading-relaxed">{delivery.deliveryAddress}</p>
+            </div>
+
+            {delivery.clientPhone && (
+              <div>
+                <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-0.5">Telefone</p>
+                <a
+                  href={`tel:${delivery.clientPhone}`}
+                  className="inline-flex items-center gap-1.5 text-indigo-600 font-medium text-sm hover:text-indigo-700"
+                >
+                  <PhoneIcon />
+                  {delivery.clientPhone}
+                </a>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Status Update Section */} 
-        <div className='mt-6 border-t pt-6 border-gray-200'>
-          <h2 className='text-xl font-bold text-gray-800 mb-4'>Atualizar Status</h2>
-          <div className='flex flex-col sm:flex-row gap-4 items-end'>
-            <div className='flex-grow w-full'>
-              <label htmlFor='status-select' className='block text-gray-700 font-semibold mb-2'>
-                Novo Status
-              </label>
-              <select
-                id='status-select'
-                value={selectedStatus}
-                onChange={handleStatusChange}
-                className='shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline'
-                disabled={isUpdatingStatus || !delivery}
-              >
-                {deliveryStatusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Action buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3 px-4 rounded-xl transition text-sm"
+          >
+            <MapIcon />
+            Abrir no Maps
+          </a>
+          <button
+            onClick={handleCopyAddress}
+            type="button"
+            className="flex items-center justify-center gap-2 bg-white hover:bg-slate-50 active:bg-slate-100 border border-slate-200 text-slate-700 font-semibold py-3 px-4 rounded-xl transition text-sm"
+          >
+            <CopyIcon />
+            {copied ? 'Copiado!' : 'Copiar end.'}
+          </button>
+        </div>
+
+        {/* Status update */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <h3 className="text-slate-800 font-semibold mb-4">Atualizar status</h3>
+          <div className="space-y-3">
+            <select
+              value={selectedStatus}
+              onChange={(e) => { setSelectedStatus(e.target.value); setUpdateError(null); }}
+              disabled={isUpdating}
+              className="w-full px-3.5 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
+            >
+              {statusOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+
+            {updateError && (
+              <p className="text-red-500 text-sm">{updateError}</p>
+            )}
+
             <button
               onClick={handleUpdateStatus}
-              disabled={isUpdatingStatus || !selectedStatus || selectedStatus === delivery.status}
-              className={`bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full sm:w-auto ${ (isUpdatingStatus || !selectedStatus || selectedStatus === delivery.status) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isUpdating || !statusChanged}
+              type="button"
+              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg transition text-sm disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {isUpdatingStatus ? 'Atualizando...' : 'Atualizar Status'}
+              {isUpdating ? 'Atualizando...' : 'Confirmar status'}
             </button>
           </div>
-          {statusUpdateError && (
-            <p className='text-red-500 text-sm mt-2'>{statusUpdateError}</p>
-          )}
         </div>
-
-        <button
-          onClick={() => {
-            // TODO trazer link direto do back
-            const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(delivery.deliveryAddress)}`;
-            window.open(googleMapsUrl, '_blank');
-          }}
-          className='mt-6 bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full'
-        >
-          Abrir Rota no Maps
-        </button>
-        <button
-          onClick={async () => {
-            try {
-              await navigator.clipboard.writeText(delivery.deliveryAddress);
-              alert(`"${delivery.deliveryAddress}" copiado para a área de transferência!`);
-            } catch (err) {
-              console.error('Falha ao copiar o endereço:', err);
-              alert('Não foi possível copiar o endereço. Por favor, copie manualmente.');
-            }
-          }}
-          className='mt-2 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full'
-        >
-          Copiar Endereço
-        </button>
-        <button
-          onClick={() => navigate(-1)}
-          className='mt-6 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full'
-        >
-          Voltar para o Dashboard
-        </button>
-      </div>
+      </main>
     </div>
   );
 };
