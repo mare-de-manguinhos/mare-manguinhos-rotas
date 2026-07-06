@@ -201,8 +201,9 @@ A implementação evoluiu além da especificação inicial (SDD) em alguns ponto
 | Nome            | GitHub / Contato        |
 |-----------------|-------------------------|
 | Douglas Bolis   |                         |
-| Gustavo Laube   |                         |
 | Gabriel Brito   |                         |
+| Gustavo Laube   |                         |
+| Jhovany Paulo   |                         |
 
 ---
 
