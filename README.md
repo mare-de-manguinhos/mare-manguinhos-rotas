@@ -151,6 +151,36 @@ npm run preview  # preview do build
 
 ---
 
+## Deploy no Render
+
+O repositório inclui um `render.yaml` (Blueprint) que configura os dois serviços automaticamente.
+
+### Passo a passo
+
+**1. Conectar o repositório**
+- Acesse [render.com](https://render.com) e faça login
+- Vá em **New → Blueprint** e selecione o repositório `mare-manguinhos-rotas`
+- O Render detecta o `render.yaml` e cria os dois serviços
+
+**2. Aguardar o build do backend**
+- O serviço `mare-entregas-api` vai buildar e gerar um URL no formato:
+  `https://mare-entregas-api.onrender.com`
+- Copie essa URL
+
+**3. Configurar a URL da API no frontend**
+- No dashboard do Render, acesse o serviço `mare-entregas-app`
+- Vá em **Environment → Environment Variables**
+- Adicione: `VITE_API_URL = https://mare-entregas-api.onrender.com`
+- Clique em **Save Changes** — o Render vai fazer redeploy automaticamente
+
+**4. Pronto**
+- O `BEARER_TOKEN` é gerado automaticamente pelo Render e compartilhado entre os serviços
+- O frontend fica disponível em: `https://mare-entregas-app.onrender.com`
+
+> **Atenção (plano gratuito):** O backend entra em modo sleep após 15 min de inatividade. A primeira requisição pode demorar ~30 s para o serviço acordar.
+
+---
+
 ## Como Rodar os Dois Juntos
 
 **Terminal 1 — Backend:**
